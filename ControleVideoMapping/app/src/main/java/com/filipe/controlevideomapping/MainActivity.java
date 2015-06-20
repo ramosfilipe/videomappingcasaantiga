@@ -17,7 +17,10 @@ import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import java.net.*;
 import java.util.*;
 
@@ -28,7 +31,8 @@ public class MainActivity extends ActionBarActivity
     /* These two variables hold the IP address and port number.
        * You should change them to the appropriate address and port.
        */
-    private static String myIP = "192.168.1.200.";
+
+    private static String myIP = "192.168.25.216";
     private static int myPort = 6666;
 
     // This is used to send messages
@@ -38,12 +42,6 @@ public class MainActivity extends ActionBarActivity
     private static Thread oscThread = new Thread() {
         @Override
         public void run() {
-      /* The first part of the run() method initializes the OSCPortOut for sending messages.
-       *
-       * For more advanced apps, where you want to change the address during runtime, you will want
-       * to have this section in a different thread, but since we won't be changing addresses here,
-       * we only have to initialize the address once.
-       */
 
             try {
                 // Connect to some IP address and port
@@ -55,18 +53,10 @@ public class MainActivity extends ActionBarActivity
                 // Error handling for any other errors
                 return;
             }
-
-
-      /* The second part of the run() method loops infinitely and sends messages every 500
-       * milliseconds.
-       */
-            while (true) {
+            System.out.println(myIP + ":" + myPort + " " + oscPortOut);
                 if (oscPortOut != null) {
-                    // Creating the message
                     Object[] thingsToSend = new Object[3];
-                    thingsToSend[0] = "Hello World";
-                    thingsToSend[1] = 12345;
-                    thingsToSend[2] = 1.2345;
+                    thingsToSend[0] = "/test 500";
 
           /* The version of JavaOSC from the Maven Repository is slightly different from the one
            * from the download link on the main website at the time of writing this tutorial.
@@ -77,42 +67,22 @@ public class MainActivity extends ActionBarActivity
            * If you're using the downloadable version for some reason, you should switch the
            * commented and uncommented lines for message below
            */
-                    OSCMessage message = new OSCMessage(myIP, Arrays.asList(thingsToSend));
-                    // OSCMessage message = new OSCMessage(myIP, thingsToSend);
-
-
-          /* NOTE: Since this version of JavaOSC uses Collections, we can actually use ArrayLists,
-           * or any other class that implements the Collection interface. The following code is
-           * valid for this version.
-           *
-           * The benefit of using an ArrayList is that you don't have to know how much information
-           * you are sending ahead of time. You can add things to the end of an ArrayList, but not
-           * to an Array.
-           *
-           * If you want to use this code with the downloadable version, you should switch the
-           * commented and uncommented lines for message2
-           */
-                    ArrayList<Object> moreThingsToSend = new ArrayList<Object>();
-                    moreThingsToSend.add("Hello World2");
-                    moreThingsToSend.add(123456);
-                    moreThingsToSend.add(12.345);
-
-                    OSCMessage message2 = new OSCMessage(myIP, moreThingsToSend);
-                    //OSCMessage message2 = new OSCMessage(myIP, moreThingsToSend.toArray());
+                    System.out.println("criando msg");
+                    OSCMessage message = new OSCMessage();
+                    message.setAddress("/" + myIP);
+                    message.addArgument(Arrays.asList(thingsToSend));
+                    System.out.println("msg criada");
 
                     try {
-                        // Send the messages
+                        System.out.println("Mandando msg " + (message != null) + " " + (oscPortOut != null));
                         oscPortOut.send(message);
-                        oscPortOut.send(message2);
-
-                        // Pause for half a second
+                        System.out.println("mandou");
                         sleep(500);
                     } catch (Exception e) {
-                        // Error handling for some error
+                        System.out.println(e);
                     }
                 }
             }
-        }
     };
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -152,7 +122,7 @@ public class MainActivity extends ActionBarActivity
         switch (number) {
             case 1:
                 mTitle = getString(R.string.title_section1);
-                break;
+            break;
             case 2:
                 mTitle = getString(R.string.title_section2);
                 break;
@@ -228,11 +198,29 @@ public class MainActivity extends ActionBarActivity
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
             Button bt = (Button) rootView.findViewById(R.id.buttonPlay);
-
+            Button setIP = (Button) rootView.findViewById(R.id.buttonSetIP);
+            TextView ip = (TextView) rootView.findViewById(R.id.textViewIP);
+            ip.setText("IP: " + myIP);
             bt.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    oscThread.start();
+                    if(!oscThread.isAlive()) {
+                        oscThread.start();
+                    } else {
+                        Toast.makeText(getActivity(),"Calma, já foi! :)",Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
+            setIP.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    EditText newIp = (EditText) getActivity().findViewById(R.id.editTextIP);
+                    TextView ip = (TextView) getActivity().findViewById(R.id.textViewIP);
+                    myIP = newIp.getText().toString();
+                    ip.setText(myIP);
+                    Toast.makeText(getActivity(),"IP mudado com sucesso",Toast.LENGTH_SHORT).show();
+
                 }
             });
             return rootView;
