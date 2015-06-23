@@ -32,31 +32,32 @@ public class MainActivity extends ActionBarActivity
        * You should change them to the appropriate address and port.
        */
 
-    private static String myIP = "192.168.25.216";
+    private static String myIP = "192.168.1.247";
     private static int myPort = 6666;
 
     // This is used to send messages
     private static OSCPortOut oscPortOut;
 
     // This thread will contain all the code that pertains to OSC
-    private static Thread oscThread = new Thread() {
-        @Override
-        public void run() {
+    public static Thread setThread(){
+        return new Thread() {
+            @Override
+            public void run() {
 
-            try {
-                // Connect to some IP address and port
-                oscPortOut = new OSCPortOut(InetAddress.getByName(myIP), myPort);
-            } catch(UnknownHostException e) {
-                // Error handling when your IP isn't found
-                return;
-            } catch(Exception e) {
-                // Error handling for any other errors
-                return;
-            }
-            System.out.println(myIP + ":" + myPort + " " + oscPortOut);
+                try {
+                    // Connect to some IP address and port
+                    oscPortOut = new OSCPortOut(InetAddress.getByName(myIP), myPort);
+                } catch(UnknownHostException e) {
+                    // Error handling when your IP isn't found
+                    return;
+                } catch(Exception e) {
+                    // Error handling for any other errors
+                    return;
+                }
+                System.out.println(myIP + ":" + myPort + " " + oscPortOut);
                 if (oscPortOut != null) {
-                    Object[] thingsToSend = new Object[3];
-                    thingsToSend[0] = "/test 500";
+                    Object[] thingsToSend = new Object[1];
+                    thingsToSend[0] = 1;
 
           /* The version of JavaOSC from the Maven Repository is slightly different from the one
            * from the download link on the main website at the time of writing this tutorial.
@@ -68,22 +69,23 @@ public class MainActivity extends ActionBarActivity
            * commented and uncommented lines for message below
            */
                     System.out.println("criando msg");
-                    OSCMessage message = new OSCMessage();
-                    message.setAddress("/" + myIP);
-                    message.addArgument(Arrays.asList(thingsToSend));
+                    OSCMessage message = new OSCMessage("/sources/1video/trig",Arrays.asList(thingsToSend));
                     System.out.println("msg criada");
 
                     try {
                         System.out.println("Mandando msg " + (message != null) + " " + (oscPortOut != null));
                         oscPortOut.send(message);
                         System.out.println("mandou");
-                        sleep(500);
+                        oscThread.currentThread().interrupt();
+                        oscThread = null;
                     } catch (Exception e) {
                         System.out.println(e);
                     }
                 }
             }
     };
+    }
+    private static Thread oscThread = setThread();
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
@@ -204,10 +206,13 @@ public class MainActivity extends ActionBarActivity
             bt.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(!oscThread.isAlive()) {
+                    if(oscThread != null) {
                         oscThread.start();
+                        Toast.makeText(getActivity(),"Comando enviado!",Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(getActivity(),"Calma, já foi! :)",Toast.LENGTH_SHORT).show();
+                        oscThread = setThread();
+                        oscThread.start();
+                        Toast.makeText(getActivity(),"Comando enviado!",Toast.LENGTH_SHORT).show();
                     }
                 }
             });
